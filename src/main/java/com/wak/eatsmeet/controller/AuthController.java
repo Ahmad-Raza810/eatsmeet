@@ -68,9 +68,10 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest){
-        System.out.println("un: "+ loginRequest.getLogin());
+        System.out.println("Step A un: "+ loginRequest.getLogin() + " pw: " + loginRequest.getPassword());
         try {
             TokenResponse response = authService.verifyUser(loginRequest);
+            System.out.println("Step Z END: ");
             return ResponseEntity.ok(new ApiResponse<TokenResponse>("User Login Successfull.", response ));
         } catch (IllegalArgumentException ex) {
             // Bad request: invalid username/password or user not found

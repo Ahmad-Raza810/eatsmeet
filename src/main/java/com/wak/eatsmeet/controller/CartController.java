@@ -22,7 +22,6 @@ public class CartController {
     @PostMapping("/add")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('SUB_ADMIN') or hasAuthority('USER')")
     public ResponseEntity<ApiResponse> addToCart(@RequestBody CartRequest cartRequest) {
-        System.out.println("???????Here:::::");
         try {
             ApiResponse result = cartService.addToCart(cartRequest);
             return ResponseEntity.ok(result);

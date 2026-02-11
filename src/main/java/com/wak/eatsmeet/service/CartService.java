@@ -36,9 +36,9 @@ public class CartService {
                     return cartRepo.save(newCart);
                 });
 
-        CartItems cartItems = new CartItems();
 
         for(CartRequest.CurryId curryId : cartRequest.getCurry_ids()) {
+            CartItems cartItems = new CartItems();
             cartItems.setCreated_date(new Date());
             cartItems.setItemTypes(cartRequest.getItemTypes());
             cartItems.setItem_id(cartRequest.getItemId());
@@ -48,6 +48,7 @@ public class CartService {
             cartItems.setCart(cart);
             cartItems.setCurry_id(curryId.getId());
             cartItemRepo.save(cartItems);
+            System.out.println("Loop 1");
         }
 
         return new ApiResponse("Item added to cart successfully", null);

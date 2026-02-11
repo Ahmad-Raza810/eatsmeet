@@ -79,6 +79,7 @@ public class AuthService {
 
         String activeToken = jwtService.generateActiveToken(userDetails.getUsername(), role);
         String refreshToken = jwtService.generateRefreshToken(userDetails.getUsername(), role);
+
         if (refreshToken != null) {
             if (role.equals("USER")) {
                 Users users = userRepo.findByEmail(userDetails.getUsername())

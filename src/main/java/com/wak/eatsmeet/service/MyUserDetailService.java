@@ -13,6 +13,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class MyUserDetailService implements UserDetailsService {
 
@@ -26,12 +28,11 @@ public class MyUserDetailService implements UserDetailsService {
     public UserDetails loadUserByUsername(String loginInput) throws UsernameNotFoundException {
 
         LoadUser loadUser = null;
-
         if (loginInput.contains("@")) {
             // Email login
-            Users user = userRepo.findByEmail(loginInput)
-                    .orElseThrow(()->new UsernameNotFoundException("User not found with email: " + loginInput));
-            if (user != null) {
+            Optional<Users> optionalUser = userRepo.findByEmail(loginInput);
+            if (optionalUser.isPresent()) {
+                Users user = optionalUser.get();
                 loadUser = mapToLoadUser(user);
             } else {
                 Employees emp = employeeRepo.findByEmail(loginInput);
