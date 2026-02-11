@@ -1,0 +1,55 @@
+package com.wak.eatsmeet.service;
+
+import com.wak.eatsmeet.dto.ApiResponse;
+import com.wak.eatsmeet.dto.cart.CartRequest;
+import com.wak.eatsmeet.model.cart.Cart;
+import com.wak.eatsmeet.model.cart.CartItems;
+import com.wak.eatsmeet.model.user.Users;
+import com.wak.eatsmeet.repository.cart.CartItemRepo;
+import com.wak.eatsmeet.repository.cart.CartRepo;
+import lombok.AllArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import java.util.Date;
+
+@Service
+@AllArgsConstructor
+public class CartService {
+    private final CartRepo cartRepo;
+    private final CartItemRepo cartItemRepo;
+    private final UserService userService;
+
+    public ApiResponse addToCart(CartRequest cartRequest) {
+        //get user_id from security context
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalArgumentException("User not authenticated");
+        }
+
+        // find the cart from user email
+        Cart cart = cartRepo.findByUsers(userService.getUserIdByEmail(authentication.getName()))
+                .orElseGet(() -> {
+                    Cart newCart = new Cart();
+                    newCart.setUsers(userService.getUserIdByEmail(authentication.getName()));
+                    return cartRepo.save(newCart);
+                });
+
+        CartItems cartItems = new CartItems();
+
+        for(CartRequest.CurryId curryId : cartRequest.getCurry_ids()) {
+            cartItems.setCreated_date(new Date());
+            cartItems.setItemTypes(cartRequest.getItemTypes());
+            cartItems.setItem_id(cartRequest.getItemId());
+            cartItems.setPrice(cartRequest.getPrice());
+            cartItems.setQuantity(cartRequest.getQuantity());
+            cartItems.setSelected(false);
+            cartItems.setCart(cart);
+            cartItems.setCurry_id(curryId.getId());
+            cartItemRepo.save(cartItems);
+        }
+
+        return new ApiResponse("Item added to cart successfully", null);
+    }
+}

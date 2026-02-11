@@ -54,4 +54,10 @@ public class UserService {
 
         return userResponse;
     }
+
+    public Users getUserIdByEmail(String name) {
+        Users users = userRepo.findByEmail(name)
+                .orElseThrow(() -> new IllegalArgumentException("User not found for this email: " + name));
+        return users;
+    }
 }

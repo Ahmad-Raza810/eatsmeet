@@ -4,6 +4,9 @@ import com.wak.eatsmeet.model.user.Users;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import javax.swing.text.html.Option;
+import java.util.Optional;
+
 @Repository
 public interface UserRepo extends JpaRepository<Users, Integer> {
     boolean existsByEmail(String email);
@@ -11,7 +14,7 @@ public interface UserRepo extends JpaRepository<Users, Integer> {
     boolean existsByNic(String nic);
 
 
-    Users findByEmail(String loginInput);
+    Optional<Users> findByEmail(String loginInput);
 
     Users findByContact(String loginInput);
 }

@@ -29,7 +29,8 @@ public class MyUserDetailService implements UserDetailsService {
 
         if (loginInput.contains("@")) {
             // Email login
-            Users user = userRepo.findByEmail(loginInput);
+            Users user = userRepo.findByEmail(loginInput)
+                    .orElseThrow(()->new UsernameNotFoundException("User not found with email: " + loginInput));
             if (user != null) {
                 loadUser = mapToLoadUser(user);
             } else {

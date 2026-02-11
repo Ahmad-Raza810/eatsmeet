@@ -17,6 +17,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -80,7 +81,8 @@ public class AuthService {
         String refreshToken = jwtService.generateRefreshToken(userDetails.getUsername(), role);
         if (refreshToken != null) {
             if (role.equals("USER")) {
-                Users users = userRepo.findByEmail(userDetails.getUsername());
+                Users users = userRepo.findByEmail(userDetails.getUsername())
+                        .orElseThrow(()->new UsernameNotFoundException("User not found with email: " + userDetails.getUsername()));
                 users.setRefresh_token(refreshToken);
                 userRepo.save(users);
 
@@ -114,7 +116,8 @@ public class AuthService {
     public Map<String, String> logout(String username, String role) {
 
         if (role.equals("USER")) {
-            Users user = userRepo.findByEmail(username);
+            Users user = userRepo.findByEmail(username)
+                    .orElseThrow(()->new UsernameNotFoundException("User not found with email: " + username));
 
             if (user != null) {
                 user.setRefresh_token(null);

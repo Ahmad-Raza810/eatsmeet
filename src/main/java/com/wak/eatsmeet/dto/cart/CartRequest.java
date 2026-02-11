@@ -1,55 +1,26 @@
 package com.wak.eatsmeet.dto.cart;
 
 import com.wak.eatsmeet.model.food.enums.ItemTypes;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class CartRequest {
+    private ItemTypes itemTypes;
+    private int itemId; //food_id
+    private  double price;
+    private int quantity;
+    private List<CurryId> curry_ids;
 
-    private int itemId;
-    private int curryId;
-    private ItemTypes itemType;
-    private double quantity;
-
-    // No-args constructor
-    public CartRequest() {
-    }
-
-    // All-args constructor
-    public CartRequest(int itemId, ItemTypes itemType, double quantity, int curry_id) {
-        this.itemId = itemId;
-        this.itemType = itemType;
-        this.quantity = quantity;
-        this.curryId = curry_id;
-    }
-
-    public int getItemId() {
-        return itemId;
-    }
-
-    public void setItemId(int itemId) {
-        this.itemId = itemId;
-    }
-
-    public ItemTypes getItemType() {
-        return itemType;
-    }
-
-    public void setItemType(ItemTypes itemType) {
-        this.itemType = itemType;
-    }
-
-    public double getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(double quantity) {
-        this.quantity = quantity;
-    }
-
-    public int getCurryId() {
-        return curryId;
-    }
-
-    public void setCurryId(int curryId) {
-        this.curryId = curryId;
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class CurryId {
+        private int id;
     }
 }
