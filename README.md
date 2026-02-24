@@ -3,6 +3,35 @@
 
 **Eatsmeet** is a robust backend REST API for a Food Ordering System built with Java and Spring Boot. It provides comprehensive features for managing menus, orders, users, and employees with secure role-based access control.
 
+☁ Cloud Architecture Style Diagram 
+
+                      ┌──────────────────────────┐ 
+                      │        Internet          │
+                      └─────────────┬────────────┘
+                                    │
+                                    ▼
+                ┌──────────────────────────────────┐
+                │          Vercel Platform         │
+                │  - Angular Static Hosting        │
+                │  - CDN Distribution              │
+                │  - HTTPS SSL                     │
+                └─────────────┬────────────────────┘
+                              │
+                              ▼
+                ┌──────────────────────────────────┐
+                │            AWS Cloud             │
+                │                                  │
+                │  ┌──────────────────────────┐    │
+                │  │        EC2 Instance      │    │
+                │  │  Spring Boot (Docker)    │    │
+                │  └─────────────┬────────────┘    │
+                │                │                 │
+                │        ┌───────────────┐         │
+                │        │   MySQL DB    │         │
+                │        │ (Local/RDS)   │         │
+                │        └───────────────┘         │
+                └──────────────────────────────────┘
+
 ## Table of Contents
 
 * [Features](https://www.google.com/search?q=%23-features)
