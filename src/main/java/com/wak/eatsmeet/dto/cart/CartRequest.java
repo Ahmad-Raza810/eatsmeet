@@ -15,6 +15,7 @@ public class CartRequest {
     private int itemId; //food_id
     private  double price;
     private int quantity;
+    private String times;
     private List<CurryId> curry_ids;
 
     @Data

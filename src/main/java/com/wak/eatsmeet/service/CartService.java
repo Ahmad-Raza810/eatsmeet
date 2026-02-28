@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 
 @Service
 @AllArgsConstructor
@@ -37,11 +38,13 @@ public class CartService {
                 });
 
 
+
         for(CartRequest.CurryId curryId : cartRequest.getCurry_ids()) {
             CartItems cartItems = new CartItems();
+            cartItems.setTimes(cartRequest.getTimes());
             cartItems.setCreated_date(new Date());
             cartItems.setItemTypes(cartRequest.getItemTypes());
-            cartItems.setItem_id(cartRequest.getItemId());
+            cartItems.setItemId(cartRequest.getItemId());
             cartItems.setPrice(cartRequest.getPrice());
             cartItems.setQuantity(cartRequest.getQuantity());
             cartItems.setSelected(false);
@@ -52,5 +55,19 @@ public class CartService {
         }
 
         return new ApiResponse("Item added to cart successfully", null);
+    }
+
+    public List<CartItems> getCartItems() {
+        //get user_id from security context
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalArgumentException("User not authenticated");
+        }
+
+        Users user = userService.getUserIdByEmail(authentication.getName());
+        Cart cart = cartRepo.findByUsers(user).orElseThrow(() -> new IllegalArgumentException("Cart not found for user"));
+        CartItems cartItems = new CartItems();
+
+        return cartItemRepo.findAllByCart(cart);
     }
 }

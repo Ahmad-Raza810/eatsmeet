@@ -6,6 +6,7 @@ import com.wak.eatsmeet.model.food.enums.ItemTypes;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,4 +20,7 @@ public interface CartItemRepo extends JpaRepository<CartItems, Integer> {
 
     void deleteAllByCart(Cart cart);
 
+    Object findByCart(Cart cart);
+
+    List<CartItems> findAllByCart(Cart cart);
 }
