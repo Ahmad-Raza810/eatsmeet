@@ -1,6 +1,7 @@
 package com.wak.eatsmeet.service;
 
 import com.wak.eatsmeet.dto.ApiResponse;
+import com.wak.eatsmeet.dto.cart.CartItemResponse;
 import com.wak.eatsmeet.dto.cart.CartRequest;
 import com.wak.eatsmeet.model.cart.Cart;
 import com.wak.eatsmeet.model.cart.CartItems;
@@ -12,8 +13,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.*;
 import java.util.Date;
-import java.util.List;
+
+
 
 @Service
 @AllArgsConstructor
@@ -23,6 +26,22 @@ public class CartService {
     private final UserService userService;
 
     public ApiResponse addToCart(CartRequest cartRequest) {
+        Calendar cal = Calendar.getInstance();
+
+        // Start of today
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        Date startOfDay = cal.getTime();
+
+        // End of today
+        cal.set(Calendar.HOUR_OF_DAY, 23);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.SECOND, 59);
+        cal.set(Calendar.MILLISECOND, 999);
+        Date endOfDay = cal.getTime();
+
         //get user_id from security context
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if(authentication == null || !authentication.isAuthenticated()) {
@@ -37,19 +56,35 @@ public class CartService {
                     return cartRepo.save(newCart);
                 });
 
+        // check if the item already exists in the cart
+        for (CartRequest.CurryId curryId : cartRequest.getCurry_ids()) {
 
+            Optional<CartItems> existingItem =
+                    cartItemRepo.findByCartAndItemIdAndCurryIdAndTimesAndCreatedDateBetween(
+                            cart,
+                            cartRequest.getItemId(),
+                            curryId.getId(),
+                            cartRequest.getTimes(),
+                            startOfDay,
+                            endOfDay
+                    );
+
+            if (existingItem.isPresent()) {
+                throw new IllegalArgumentException("Item already exists in cart for today");
+            }
+        }
 
         for(CartRequest.CurryId curryId : cartRequest.getCurry_ids()) {
             CartItems cartItems = new CartItems();
             cartItems.setTimes(cartRequest.getTimes());
-            cartItems.setCreated_date(new Date());
+            cartItems.setCreatedDate(new Date());
             cartItems.setItemTypes(cartRequest.getItemTypes());
             cartItems.setItemId(cartRequest.getItemId());
             cartItems.setPrice(cartRequest.getPrice());
             cartItems.setQuantity(cartRequest.getQuantity());
             cartItems.setSelected(false);
             cartItems.setCart(cart);
-            cartItems.setCurry_id(curryId.getId());
+            cartItems.setCurryId(curryId.getId());
             cartItemRepo.save(cartItems);
             System.out.println("Loop 1");
         }
@@ -57,7 +92,7 @@ public class CartService {
         return new ApiResponse("Item added to cart successfully", null);
     }
 
-    public List<CartItems> getCartItems() {
+    public List<CartItemResponse> getCartItems() {
         //get user_id from security context
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if(authentication == null || !authentication.isAuthenticated()) {
@@ -66,8 +101,22 @@ public class CartService {
 
         Users user = userService.getUserIdByEmail(authentication.getName());
         Cart cart = cartRepo.findByUsers(user).orElseThrow(() -> new IllegalArgumentException("Cart not found for user"));
-        CartItems cartItems = new CartItems();
 
-        return cartItemRepo.findAllByCart(cart);
+        //return cartItemRepo.findAllByCart(cart);
+        return cartItemRepo.findAllByCart(cart)
+                .stream()
+                .map(item -> new CartItemResponse(
+                        item.getId(),
+                        item.getItemId(),
+                        item.getCurryId(),
+                        item.getItemTypes(),
+                        item.getQuantity(),
+                        item.getPrice(),
+                        item.getCreatedDate(),
+                        item.isSelected(),
+                        item.getTimes(),
+                        item.getCart().getId()
+                ))
+                .toList();
     }
 }
