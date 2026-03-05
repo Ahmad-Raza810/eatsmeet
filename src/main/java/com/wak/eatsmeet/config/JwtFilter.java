@@ -26,25 +26,32 @@ public class JwtFilter extends OncePerRequestFilter {
     private MyUserDetailService userDetailService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
 
-        if(authHeader != null && authHeader.startsWith("Bearer ")){
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
-            String userLogin = jwtService.extractUserName(token);
 
-            if(userLogin != null && SecurityContextHolder.getContext().getAuthentication() == null){
-                UserDetails userDetails = userDetailService.loadUserByUsername(userLogin);
-                if(jwtService.validateToken(token, userDetails)){
-                    String role = jwtService.extractRole(token);
+            // Ignore token if it literally says "null" or "undefined" from frontend bugs
+            if (!token.equals("null") && !token.equals("undefined") && !token.isBlank()) {
+                try {
+                    String userLogin = jwtService.extractUserName(token);
 
-                    UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
-                            new UsernamePasswordAuthenticationToken(
+                    if (userLogin != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                        UserDetails userDetails = userDetailService.loadUserByUsername(userLogin);
+                        if (jwtService.validateToken(token, userDetails)) {
+                            String role = jwtService.extractRole(token);
+
+                            UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                                     userDetails,
                                     null,
-                                    List.of(new SimpleGrantedAuthority(role))
-                            );
-                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                                    List.of(new SimpleGrantedAuthority(role)));
+                            SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("JWT Token processing error: " + e.getMessage());
                 }
             }
         }

@@ -13,6 +13,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.wak.eatsmeet.model.order.Orders;
+import com.wak.eatsmeet.model.order.OrderItems;
+import com.wak.eatsmeet.model.order.OrderStatus;
+import com.wak.eatsmeet.repository.order.OrderRepo;
+import com.wak.eatsmeet.repository.order.OrderItemRepo;
+import com.wak.eatsmeet.dto.cart.CheckoutItemRequest;
 import java.util.*;
 import java.util.Date;
 import java.text.SimpleDateFormat;
@@ -24,6 +30,8 @@ public class CartService {
     private final CartRepo cartRepo;
     private final CartItemRepo cartItemRepo;
     private final UserService userService;
+    private final OrderRepo orderRepo;
+    private final OrderItemRepo orderItemRepo;
 
     public ApiResponse addToCart(CartRequest cartRequest) {
         Calendar cal = Calendar.getInstance();
@@ -195,5 +203,67 @@ public class CartService {
         }
 
         return new ApiResponse("All specified items removed successfully", null);
+    }
+
+    public ApiResponse checkout(List<CheckoutItemRequest> items) {
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("No items provided for checkout");
+        }
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalArgumentException("User not authenticated");
+        }
+        Users user = userService.getUserIdByEmail(authentication.getName());
+
+        double totalAmount = 0;
+        List<String> uniqueIdsToRemove = new ArrayList<>();
+
+        // Dummy inventory check logic (to match the Prompt example)
+        // In a real app we'd check actual food/inventory here
+        // Set an arbitrary condition for testing, e.g. item count > 100
+        if (items.size() > 100) {
+            Map<String, String> errMap = new HashMap<>();
+            errMap.put("error", "Insufficient inventory");
+            return new ApiResponse("Checkout failed", errMap);
+        }
+
+        for (CheckoutItemRequest item : items) {
+            totalAmount += item.getTotalPrice();
+            uniqueIdsToRemove.add(item.getUniqueId());
+        }
+
+        Orders order = new Orders();
+        order.setUsers(user);
+        order.setOrderDate(new Date());
+        order.setUpdateDate(new Date());
+        order.setTotalAmount(totalAmount);
+        order.setStatus(OrderStatus.CONFIRMED);
+
+        Orders savedOrder = orderRepo.save(order);
+
+        for (CheckoutItemRequest item : items) {
+            OrderItems orderItem = new OrderItems();
+            orderItem.setOrders(savedOrder);
+            orderItem.setItem_id(item.getItemId());
+            orderItem.setItemTypes(item.getItemTypes());
+            orderItem.setQuantity(item.getQuantity());
+            orderItem.setPrice(item.getTotalPrice());
+            orderItem.setCreated_date(new Date());
+            orderItem.setSelected(true);
+
+            orderItemRepo.save(orderItem);
+        }
+
+        // Remove from cart
+        this.removeMultipleCartItems(uniqueIdsToRemove);
+
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("orderId", "ORD-" + savedOrder.getId());
+        responseData.put("totalAmount", totalAmount);
+        responseData.put("itemsCount", items.size());
+        responseData.put("status", savedOrder.getStatus().toString());
+
+        return new ApiResponse("Checkout completed successfully", responseData);
     }
 }
