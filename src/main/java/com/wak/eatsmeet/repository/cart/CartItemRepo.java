@@ -13,24 +13,29 @@ import java.util.Optional;
 @Repository
 public interface CartItemRepo extends JpaRepository<CartItems, Integer> {
 
-    Optional<CartItems> findByCartAndItemIdAndItemTypes(
-            Cart cart,
-            int itemId,
-            ItemTypes itemTypes
-    );
+        Optional<CartItems> findByCartAndItemIdAndItemTypes(
+                        Cart cart,
+                        int itemId,
+                        ItemTypes itemTypes);
 
-    void deleteAllByCart(Cart cart);
+        void deleteAllByCart(Cart cart);
 
-    Object findByCart(Cart cart);
+        Object findByCart(Cart cart);
 
-    List<CartItems> findAllByCart(Cart cart);
+        List<CartItems> findAllByCart(Cart cart);
 
-    Optional<CartItems> findByCartAndItemIdAndCurryIdAndTimesAndCreatedDateBetween(
-            Cart cart,
-            int itemId,
-            int curryId,
-            String times,
-            Date start,
-            Date end
-    );
+        Optional<CartItems> findByCartAndItemIdAndCurryIdAndTimesAndCreatedDateBetween(
+                        Cart cart,
+                        int itemId,
+                        int curryId,
+                        String times,
+                        Date start,
+                        Date end);
+
+        List<CartItems> findByCartAndItemIdAndTimesAndCreatedDateBetween(
+                        Cart cart,
+                        int itemId,
+                        String times,
+                        Date start,
+                        Date end);
 }

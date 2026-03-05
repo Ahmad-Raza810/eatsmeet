@@ -15,8 +15,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.Date;
-
-
+import java.text.SimpleDateFormat;
+import com.wak.eatsmeet.model.food.enums.ItemTypes;
 
 @Service
 @AllArgsConstructor
@@ -42,9 +42,9 @@ public class CartService {
         cal.set(Calendar.MILLISECOND, 999);
         Date endOfDay = cal.getTime();
 
-        //get user_id from security context
+        // get user_id from security context
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if(authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null || !authentication.isAuthenticated()) {
             throw new IllegalArgumentException("User not authenticated");
         }
 
@@ -59,22 +59,20 @@ public class CartService {
         // check if the item already exists in the cart
         for (CartRequest.CurryId curryId : cartRequest.getCurry_ids()) {
 
-            Optional<CartItems> existingItem =
-                    cartItemRepo.findByCartAndItemIdAndCurryIdAndTimesAndCreatedDateBetween(
-                            cart,
-                            cartRequest.getItemId(),
-                            curryId.getId(),
-                            cartRequest.getTimes(),
-                            startOfDay,
-                            endOfDay
-                    );
+            Optional<CartItems> existingItem = cartItemRepo.findByCartAndItemIdAndCurryIdAndTimesAndCreatedDateBetween(
+                    cart,
+                    cartRequest.getItemId(),
+                    curryId.getId(),
+                    cartRequest.getTimes(),
+                    startOfDay,
+                    endOfDay);
 
             if (existingItem.isPresent()) {
                 throw new IllegalArgumentException("Item already exists in cart for today");
             }
         }
 
-        for(CartRequest.CurryId curryId : cartRequest.getCurry_ids()) {
+        for (CartRequest.CurryId curryId : cartRequest.getCurry_ids()) {
             CartItems cartItems = new CartItems();
             cartItems.setTimes(cartRequest.getTimes());
             cartItems.setCreatedDate(new Date());
@@ -93,16 +91,17 @@ public class CartService {
     }
 
     public List<CartItemResponse> getCartItems() {
-        //get user_id from security context
+        // get user_id from security context
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if(authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null || !authentication.isAuthenticated()) {
             throw new IllegalArgumentException("User not authenticated");
         }
 
         Users user = userService.getUserIdByEmail(authentication.getName());
-        Cart cart = cartRepo.findByUsers(user).orElseThrow(() -> new IllegalArgumentException("Cart not found for user"));
+        Cart cart = cartRepo.findByUsers(user)
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found for user"));
 
-        //return cartItemRepo.findAllByCart(cart);
+        // return cartItemRepo.findAllByCart(cart);
         return cartItemRepo.findAllByCart(cart)
                 .stream()
                 .map(item -> new CartItemResponse(
@@ -115,8 +114,86 @@ public class CartService {
                         item.getCreatedDate(),
                         item.isSelected(),
                         item.getTimes(),
-                        item.getCart().getId()
-                ))
+                        item.getCart().getId()))
                 .toList();
+    }
+
+    public ApiResponse removeCartItem(String uniqueId) {
+        // get user_id from security context
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalArgumentException("User not authenticated");
+        }
+
+        try {
+            // uniqueId format: yyyy-MM-dd-times-itemId-cartId[-itemType]
+            // wait, date has hyphens, so first 10 chars for date
+            String dateStr = uniqueId.substring(0, 10);
+            String[] parts = uniqueId.substring(11).split("-");
+            String times = parts[0];
+            int itemId = Integer.parseInt(parts[1]);
+            int cartId = Integer.parseInt(parts[2]);
+
+            ItemTypes itemType = null;
+            if (parts.length > 3) {
+                itemType = ItemTypes.valueOf(parts[3]);
+            }
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date date = sdf.parse(dateStr);
+
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(date);
+
+            // Start of day
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            Date startOfDay = cal.getTime();
+
+            // End of day
+            cal.set(Calendar.HOUR_OF_DAY, 23);
+            cal.set(Calendar.MINUTE, 59);
+            cal.set(Calendar.SECOND, 59);
+            cal.set(Calendar.MILLISECOND, 999);
+            Date endOfDay = cal.getTime();
+
+            Users user = userService.getUserIdByEmail(authentication.getName());
+            Cart cart = cartRepo.findById(cartId)
+                    .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
+
+            if (cart.getUsers().getId() != user.getId()) {
+                throw new IllegalArgumentException("Unauthorized to modify this cart");
+            }
+
+            List<CartItems> itemsToDelete = cartItemRepo.findByCartAndItemIdAndTimesAndCreatedDateBetween(
+                    cart, itemId, times, startOfDay, endOfDay);
+
+            if (itemType != null) {
+                ItemTypes finalItemType = itemType;
+                itemsToDelete = itemsToDelete.stream()
+                        .filter(item -> item.getItemTypes() == finalItemType)
+                        .toList();
+            }
+
+            cartItemRepo.deleteAll(itemsToDelete);
+            return new ApiResponse("Items removed successfully", null);
+
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid unique id format or execution error: " + e.getMessage());
+        }
+    }
+
+    public ApiResponse removeMultipleCartItems(List<String> uniqueIds) {
+        if (uniqueIds == null || uniqueIds.isEmpty()) {
+            throw new IllegalArgumentException("No items provided to remove");
+        }
+
+        for (String uniqueId : uniqueIds) {
+            removeCartItem(uniqueId);
+        }
+
+        return new ApiResponse("All specified items removed successfully", null);
     }
 }

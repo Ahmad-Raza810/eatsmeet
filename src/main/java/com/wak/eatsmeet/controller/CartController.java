@@ -1,6 +1,5 @@
 package com.wak.eatsmeet.controller;
 
-
 import com.wak.eatsmeet.dto.ApiResponse;
 import com.wak.eatsmeet.dto.cart.CartItemResponse;
 import com.wak.eatsmeet.dto.cart.CartRequest;
@@ -31,14 +30,53 @@ public class CartController {
         }
     }
 
-    //get all cart items by user id
+    // get all cart items by user id
     @GetMapping("/items")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('SUB_ADMIN') or hasAuthority('USER')")
-    public ResponseEntity<ApiResponse<List<CartItemResponse>>>  getCartItems() {
-            List<CartItemResponse> response =
-                    cartService.getCartItems();
+    public ResponseEntity<ApiResponse<List<CartItemResponse>>> getCartItems() {
+        List<CartItemResponse> response = cartService.getCartItems();
 
-            ApiResponse res = new ApiResponse("Cart items retrieved successfully", response);
-            return ResponseEntity.ok(res);
+        ApiResponse res = new ApiResponse("Cart items retrieved successfully", response);
+        return ResponseEntity.ok(res);
+    }
+
+    @DeleteMapping("/remove/{uniqueId}")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('SUB_ADMIN') or hasAuthority('USER')")
+    public ResponseEntity<ApiResponse> removeCartItem(@PathVariable String uniqueId) {
+        try {
+            ApiResponse result = cartService.removeCartItem(uniqueId);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @PostMapping("/remove-multiple")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('SUB_ADMIN') or hasAuthority('USER')")
+    public ResponseEntity<ApiResponse> removeMultipleCartItems(@RequestBody com.fasterxml.jackson.databind.JsonNode payload) {
+        System.out.println("mmmmmmmmmmmmm: "+payload);
+        try {
+            java.util.List<String> uniqueIds = new java.util.ArrayList<>();
+            if (payload != null) {
+                if (payload.isArray()) {
+                    for (com.fasterxml.jackson.databind.JsonNode node : payload) {
+                        uniqueIds.add(node.asText());
+                    }
+                } else if (payload.isObject()) {
+                    payload.fields().forEachRemaining(entry -> {
+                        com.fasterxml.jackson.databind.JsonNode node = entry.getValue();
+                        if (node.isArray()) {
+                            for (com.fasterxml.jackson.databind.JsonNode n : node) {
+                                uniqueIds.add(n.asText());
+                            }
+                        }
+                    });
+                }
+            }
+            ApiResponse result = cartService.removeMultipleCartItems(uniqueIds);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse(e.getMessage(), null));
+        }
     }
 }
