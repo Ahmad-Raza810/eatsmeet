@@ -60,4 +60,7 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found for this email: " + name));
         return users;
     }
+
+//    public Users getUserId(int userId) {
+//    }
 }

@@ -252,6 +252,11 @@ public class CartService {
             orderItem.setCreated_date(new Date());
             orderItem.setSelected(true);
 
+            // Check and set curryIds
+            if (item.getCurryIds() != null && !item.getCurryIds().isEmpty()) {
+                orderItem.setCurryIds(item.getCurryIds());
+            }
+
             orderItemRepo.save(orderItem);
         }
 

@@ -4,6 +4,7 @@ import com.wak.eatsmeet.model.food.enums.ItemTypes;
 import jakarta.persistence.*;
 
 import java.util.Date;
+import java.util.List;
 
 @Entity
 public class OrderItems {
@@ -11,7 +12,6 @@ public class OrderItems {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_item_id")
     private int id;
-
 
     private int item_id;
 
@@ -23,11 +23,17 @@ public class OrderItems {
     private Date created_date;
     private boolean selected;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "order_item_curries", joinColumns = @JoinColumn(name = "order_item_id"))
+    @Column(name = "curry_id")
+    private List<Integer> curryIds;
+
     @ManyToOne
     @JoinColumn(name = "order_id", referencedColumnName = "order_id")
     private Orders orders;
 
-    public OrderItems(int id, int item_id, ItemTypes itemTypes, double quantity, double price, Date created_date, boolean selected, Orders orders) {
+    public OrderItems(int id, int item_id, ItemTypes itemTypes, double quantity, double price, Date created_date,
+            boolean selected, List<Integer> curryIds, Orders orders) {
         this.id = id;
         this.item_id = item_id;
         this.itemTypes = itemTypes;
@@ -35,6 +41,7 @@ public class OrderItems {
         this.price = price;
         this.created_date = created_date;
         this.selected = selected;
+        this.curryIds = curryIds;
         this.orders = orders;
     }
 
@@ -95,6 +102,14 @@ public class OrderItems {
 
     public void setSelected(boolean selected) {
         this.selected = selected;
+    }
+
+    public List<Integer> getCurryIds() {
+        return curryIds;
+    }
+
+    public void setCurryIds(List<Integer> curryIds) {
+        this.curryIds = curryIds;
     }
 
     public Orders getOrders() {
